@@ -24,8 +24,8 @@ view address model =
   let currentSlide = 
       withDefault "" (get model.index <| fromList model.slides)
   in div []
-      [ div [] [ a [ style [("position", "absolute"), ("top", "0px"), ("left", "0px"), ("width", "150px"), ("height", "600px")], onClick address Decrement ] [ ]
-               , a [ style [("position", "absolute"), ("top", "0px"), ("right", "0px"), ("width", "150px"), ("height", "600px")], onClick address Increment ] [ ]
+      [ div [] [ div [ style [("position", "absolute"), ("top", "0px"), ("left", "0px"), ("width", "150px"), ("height", "300px")], onClick address Decrement ] [ ]
+               , div [ style [("position", "absolute"), ("top", "0px"), ("right", "0px"), ("width", "150px"), ("height", "300px")], onClick address Increment ] [ ]
                ]
       , div [] [ Center.markdown "600px" currentSlide ]
       ]
