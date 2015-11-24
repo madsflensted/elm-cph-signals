@@ -161,22 +161,27 @@ model =
 
 main = Signal.map show model
 ```
-- Give step 6 and 7 a try
-
 """
   , """
-## Time
-Apply another Signal
+## Step 8
+Filtering Signals
 ```elm
-import Time
-...
-adapt x =
-  Time.inSeconds x |> (*) 30
+update action count =
+  case action of
+    False -> count
+    True -> count + 1
 
-main = 
-  Signal.map (adapt >> view) (Time.every Time.second)
+inputs = 
+    Signal.sampleOn Mouse.clicks (Keyboard.isDown 32)
+
+model = 
+  Signal.foldp update 0 inputs 
+
+main = Signal.map show model
 ```
-- create intermediary functions to transform the incoming Signal Type and range to something that matches your parameter
+- Give step 6, 7 and 8 a try
+- Use `foldp`, `mergeMany` to manipulate your `someShape` with different inputs
+
 """
   , """
 ## What we know about a Signal
@@ -192,6 +197,12 @@ main =
 ## Reactive in Elm
 The Signal type represents values that can change over time
 ![Elm](assets/reactive-elm-diagram-small.png)
+"""
+  , """
+## Connect Four
+![Connect Four Game](assets/connect-four-small.jpg)
+- Make [Last Months](ConnectFour.elm) playable
+- [Playable version](https://raw.githubusercontent.com/madsflensted/connect-four/master/ConnectFour.elm)
 """
   , """
 ## Examples, Dot clock
@@ -281,5 +292,21 @@ main =
 - Try it out
 
 By [James MacAuly](https://gist.github.com/jamesmacaulay/048ecc7b789524e84b37)
+"""
+  , """
+# BREAK
+"""
+  , """
+# Yatzy Dice Roller
+
+Group Exercise
+
+##### https://github.com/elmcph/yatzy-dice-roller
+"""
+  , """
+# Next Meetup
+
+January 27. 2016
+
 """
   ]

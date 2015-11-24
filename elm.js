@@ -10493,10 +10493,26 @@ Elm.Slides.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
-   var allSlides = _U.list(["\n# Elm Copenhagen\nWedensday November 25. at BestBrains\n"
-                           ,"\n## Program\n- 18.00 - 19.00, Elm Signals\n- 19.00 - 20.30, ???, group work and solution sharing\n- 20.45 - 21.00, Demo\'s\n"
-                           ,"\n# Signals in core\n- [Keyboard](http://package.elm-lang.org/packages/elm-lang/core/2.1.0/Mouse)\n- [Mouse](http://package.elm-lang.org/packages/elm-lang/core/2.1.0/Mouse)\n- [Time](http://package.elm-lang.org/packages/elm-lang/core/2.1.0/Time)\n- [Touch](http://package.elm-lang.org/packages/elm-lang/core/2.1.0/Touch)\n- [Window](http://package.elm-lang.org/packages/elm-lang/core/2.1.0/Window)\n\n"
-                           ,"\n# Signal manipulation\n[Signal](http://package.elm-lang.org/packages/elm-lang/core/2.1.0/Signal)\n- map, map2, map3 ...\n- merge, mergeMany\n- foldp\n- filter, dropRepeats, sampleOn\n\n[Signal Extra](http://package.elm-lang.org/packages/Apanatshka/elm-signal-extra/5.6.0)\n"]);
+   var allSlides = _U.list(["\n# Elm Copenhagen\nWedensday November 25. at BestBrains\n\n##### https://madsflensted.github.io/elm-cph-signals\n"
+                           ,"\n## Program\n- 18.00 - 19.00: Signals\n- 19.00 - 20.30: Yatzy Dice Roller, group work and solution sharing\n- 20.45 - 21.00: Demos\n"
+                           ,"\n## Step 1\nCreate something to view\n```elm\nimport Color exposing (..)\nimport Graphics.Collage exposing (..)\nimport Graphics.Element exposing (show)\n\nsomeShape =\n  ngon 3 50.0\n    |> filled red\n    |> alpha 0.8\n    |> scale 2.5\n    |> move (20.0, -10.0)\n    |> rotate (degrees 45)\n\nview = \n  collage 500 500 [ someShape ]\n  \nmain = view\n```\n"
+                           ,"\n## Step 2\nRefactor `view` and `someShape` to take a single `Float` as a parameter. Use the parameter to control one of the facets of your shape.\n```elm\nsomeShape : Float -> Form\nsomeShape x =\n  ...\n\nview x =\n  ...\n\nmain = \n  view ...\n```\nExperiment with changing the value passed to `view`\n"
+                           ,"\n## Step 3\nApply a Signal\n```elm\nimport Mouse\nimport Signal\n...\n\nmain = \n  Signal.map view Mouse.x\n```\nAdapt `view` to transform the Int type in Mouse.x to type of Float\n\nNumber conversion:\n- `Int -> Float`, use `toFloat`\n- `Float -> Int`, use `round`/`floor`/`ceiling`/`truncate`\n\nWhat about range and scale of input parameter?\nWhat happens if you use the parameter to control multiple facets of your shape?\n"
+                           ,"\n## Side note: Graphics with Elm Collage and Mouse\n- `Mouse` values have (0,0) in upper left corner - growing (right, down)\n- `Collage` has (0,0) in the middle - growing (right, up). I.e. the [Cartesian coordinate system](https://en.wikipedia.org/wiki/Cartesian_coordinate_system)\n\nConvert Mouse coordinates to Cartesian:\n```elm\ncartesianX : Int -> Int -> Float\ncartesianX x width =\n  x - (width // 2) |> toFloat\n\ncartesianY : Int -> Int -> Float\ncartesianY y height =\n  (height // 2) - y |> toFloat\n\ncartesian : (Int, Int) -> (Int, Int) -> (Float, Float)\ncartesian (x, y) (width, height) =\n  (cartesianX x width, cartesianY y height)\n\n```\n"
+                           ,"\n## Step 4\nApply another Signal\n```elm\n\nview x y =\n  ...\n\nmain = \n  Signal.map2 view Mouse.x Mouse.y\n```\n- Extract another parameter in `someShape` and use Mouse.y to control that\n\nSignal.map is defined for up to 5 signals\n"
+                           ,"\n## Side note: Signals in the Standard Library\n- [Keyboard](http://package.elm-lang.org/packages/elm-lang/core/3.0.0/Mouse)\n- [Mouse](http://package.elm-lang.org/packages/elm-lang/core/3.0.0/Mouse)\n- [Time](http://package.elm-lang.org/packages/elm-lang/core/3.0.0/Time)\n- [Touch](http://package.elm-lang.org/packages/elm-lang/core/3.0.0/Touch)\n- [Window](http://package.elm-lang.org/packages/elm-lang/core/3.0.0/Window)\n"
+                           ,"\n## Step 5\nUse past Signal values with `foldp`\n\n![Elm](assets/signal-map-foldp.png)\n\n```\nfoldp : (a -> b -> b) -> b -> Signal a -> Signal b\n```\n"
+                           ,"\n## Step 6\nCount clicks\n```elm\nupdate action count =\n  count + 1\n\nmodel = \n  Signal.foldp update 0 Mouse.clicks\n\nmain = Signal.map show model\n```\n\n"
+                           ,"\n## Step 7\nMerge two Signals\n```elm\ntype Action = PosX Int | Click\n\nupdate action (pos, count) =\n  case action of\n    PosX x -> (x, count)\n    Click -> (pos, count + 1)\n\ninputs = \n  Signal.mergeMany\n    [ Signal.map PosX Mouse.x\n    , Signal.map (\\_ -> Click) Mouse.clicks\n    ]\n\nmodel = \n  Signal.foldp update (0, 0) inputs\n\nmain = Signal.map show model\n```\n"
+                           ,"\n## Step 8\nFiltering Signals\n```elm\nupdate action count =\n  case action of\n    False -> count\n    True -> count + 1\n\ninputs = \n    Signal.sampleOn Mouse.clicks (Keyboard.isDown 32)\n\nmodel = \n  Signal.foldp update 0 inputs \n\nmain = Signal.map show model\n```\n- Give step 6, 7 and 8 a try\n- Use `foldp`, `mergeMany` to manipulate your `someShape` with different inputs\n\n"
+                           ,"\n## What we know about a Signal\n- a Signal wraps value that changes over time\n- a Signal value has a predefined type\n- a Signal value is always defined\n- a Signal value cannot be inspected\n- a Signal value can be transformed using pure functions\n- a Signal must be defined at compile time\n- to be usefull the Signal must be passed to `main` or to a `port`\n"
+                           ,"\n## Reactive in Elm\nThe Signal type represents values that can change over time\n![Elm](assets/reactive-elm-diagram-small.png)\n"
+                           ,"\n## Connect Four\n![Connect Four Game](assets/connect-four-small.jpg)\n- Make [Last Months](ConnectFour.elm) playable\n- [Playable version](https://raw.githubusercontent.com/madsflensted/connect-four/master/ConnectFour.elm)\n"
+                           ,"\n## Examples, Dot clock\n```elm\nimport Color exposing (rgb, black)\nimport Graphics.Collage exposing (..)\nimport Signal\nimport Time exposing (inSeconds, every, millisecond)\n\nmain =\n    Signal.map (dot << inSeconds) (every <| 10 * millisecond)\n\ndot t =\n  let x = 75*cos(-2*pi * t / 60)\n      y = 75*sin(-2*pi * t / 60)\n  in collage 200 200\n      [ circle 2 |> filled (rgb 128 0 128) |> move (x, y) \n      , square 200 |> outlined (solid black)\n      ]\n```\n- Try it out\n\nBy [Joey Eremondi](http://codegolf.stackexchange.com/questions/62095/a-single-pixel-moving-in-a-circular-path/62189#62189)\n"
+                           ,"\n## Examples, Running Lambda\n```elm\nimport Graphics.Collage exposing (..)\nimport Graphics.Element exposing (..)\nimport Text\nimport Color exposing (..)\nimport Time\nimport Signal\n\nlambdaForm scaleFactor color pos =\n    Text.fromString \"𝝀\"\n      |> Text.color color\n      |> text\n      |> scale scaleFactor\n      |> move pos\n                      \ncolors =\n  [purple, blue, green, yellow, orange, red]\n  |> List.map (List.repeat 12)\n  |> List.concat\n\nanimatedColors =\n  let step _ colorLists =\n    case colorLists of\n      (color::colors)::_ -> (colors ++ [color]) :: colorLists\n      [] :: _ -> []\n      [] -> []\n  in\n    List.foldr step [colors] colors\n      |> List.map (\\xs -> xs ++ [lightOrange])\n      |> List.reverse\n      |> List.indexedMap (\\i x -> if i % 2 == 0 then Just x else Nothing)\n      |> List.filterMap identity\n\npositions start diffX diffY =\n  let step _ xs =\n    case xs of\n      (x,y) :: _ -> (x + diffX, y - diffY) :: xs\n      [] -> []\n  in\n    List.foldr step [start] colors\n\nmodel = animatedColors\n\nupdate _ remainingFrames =\n  case remainingFrames of\n    [_] -> animatedColors\n    [] -> animatedColors\n    _::tl -> tl\n\nview remainingFrames =\n  let colors = remainingFrames |> List.head |> Maybe.withDefault []\n  in\n    (rect 400 400 |> filled lightGrey)\n    :: List.map2 (lambdaForm 30) colors (positions (-62,90) 1.5 0.75)\n      |> collage 400 400\n\nmain : Signal Element\nmain =\n  Time.fps 24 |> Signal.foldp update model |> Signal.map view\n```\n- Try it out\n\nBy [James MacAuly](https://gist.github.com/jamesmacaulay/048ecc7b789524e84b37)\n"
+                           ,"\n# BREAK\n"
+                           ,"\n# Yatzy Dice Roller\n\nGroup Exercise\n\n##### https://github.com/elmcph/yatzy-dice-roller\n"
+                           ,"\n# Next Meetup\n\nJanuary 27. 2016\n\n"]);
    return _elm.Slides.values = {_op: _op,allSlides: allSlides};
 };
 Elm.Main = Elm.Main || {};
@@ -10522,60 +10538,44 @@ Elm.Main.make = function (_elm) {
    var update = F2(function (action,model) {
       var _p0 = action;
       if (_p0.ctor === "Increment") {
-            return _U.update(model,
-            {index: A2($Basics._op["%"],
-            model.index + 1,
-            $List.length(model.slides))});
+            return _U.update(model,{index: A2($Basics._op["%"],model.index + 1,$List.length(model.slides))});
          } else {
-            return _U.update(model,
-            {index: A2($Basics._op["%"],
-            model.index - 1,
-            $List.length(model.slides))});
+            return _U.update(model,{index: A2($Basics._op["%"],model.index - 1,$List.length(model.slides))});
          }
    });
    var Decrement = {ctor: "Decrement"};
    var Increment = {ctor: "Increment"};
    var view = F2(function (address,model) {
-      var currentSlide = A2($Maybe.withDefault,
-      "",
-      A2($Array.get,model.index,$Array.fromList(model.slides)));
+      var currentSlide = A2($Maybe.withDefault,"",A2($Array.get,model.index,$Array.fromList(model.slides)));
       return A2($Html.div,
       _U.list([]),
       _U.list([A2($Html.div,
               _U.list([]),
-              _U.list([A2($Html.a,
-                      _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
-                                                               ,_0: "position"
-                                                               ,_1: "absolute"}
+              _U.list([A2($Html.div,
+                      _U.list([$Html$Attributes.$class("navigate")
+                              ,$Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "position",_1: "absolute"}
                                                               ,{ctor: "_Tuple2",_0: "top",_1: "0px"}
                                                               ,{ctor: "_Tuple2",_0: "left",_1: "0px"}
                                                               ,{ctor: "_Tuple2",_0: "width",_1: "150px"}
-                                                              ,{ctor: "_Tuple2",_0: "height",_1: "600px"}]))
+                                                              ,{ctor: "_Tuple2",_0: "height",_1: "300px"}]))
                               ,A2($Html$Events.onClick,address,Decrement)]),
-                      _U.list([]))
-                      ,A2($Html.a,
-                      _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
-                                                               ,_0: "position"
-                                                               ,_1: "absolute"}
+                      _U.list([A2($Html.div,
+                      _U.list([$Html$Attributes.$class("overlay")]),
+                      _U.list([A2($Html.span,_U.list([$Html$Attributes.$class("arrow")]),_U.list([$Html.text("<")]))]))]))
+                      ,A2($Html.div,
+                      _U.list([$Html$Attributes.$class("navigate")
+                              ,$Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "position",_1: "absolute"}
                                                               ,{ctor: "_Tuple2",_0: "top",_1: "0px"}
                                                               ,{ctor: "_Tuple2",_0: "right",_1: "0px"}
                                                               ,{ctor: "_Tuple2",_0: "width",_1: "150px"}
-                                                              ,{ctor: "_Tuple2",_0: "height",_1: "600px"}]))
+                                                              ,{ctor: "_Tuple2",_0: "height",_1: "300px"}]))
                               ,A2($Html$Events.onClick,address,Increment)]),
-                      _U.list([]))]))
-              ,A2($Html.div,
-              _U.list([]),
-              _U.list([A2($Center.markdown,"600px",currentSlide)]))]));
+                      _U.list([A2($Html.div,
+                      _U.list([$Html$Attributes.$class("overlay")]),
+                      _U.list([A2($Html.span,_U.list([$Html$Attributes.$class("arrow")]),_U.list([$Html.text(">")]))]))]))]))
+              ,A2($Html.div,_U.list([]),_U.list([A2($Center.markdown,"600px",currentSlide)]))]));
    });
    var model = {index: 0,slides: $Slides.allSlides};
-   var main = $StartApp$Simple.start({model: model
-                                     ,view: view
-                                     ,update: update});
-   return _elm.Main.values = {_op: _op
-                             ,main: main
-                             ,model: model
-                             ,view: view
-                             ,Increment: Increment
-                             ,Decrement: Decrement
-                             ,update: update};
+   var main = $StartApp$Simple.start({model: model,view: view,update: update});
+   return _elm.Main.values = {_op: _op,main: main,model: model,view: view,Increment: Increment,Decrement: Decrement,update: update};
 };
