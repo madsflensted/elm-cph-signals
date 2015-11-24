@@ -4,6 +4,8 @@ allSlides =
   [ """
 # Elm Copenhagen
 Wedensday November 25. at BestBrains
+
+##### https://madsflensted.github.io/elm-cph-signals
 """
   , """
 ## Program
@@ -22,10 +24,10 @@ import Graphics.Element exposing (show)
 someShape =
   ngon 3 50.0
     |> filled red
-    |> move (20.0, -10.0)
-    |> scale 2.5
-    |> rotate (degrees 45)
     |> alpha 0.8
+    |> scale 2.5
+    |> move (20.0, -10.0)
+    |> rotate (degrees 45)
 
 view = 
   collage 500 500 [ someShape ]
@@ -101,10 +103,12 @@ view x y =
 main = 
   Signal.map2 view Mouse.x Mouse.y
 ```
+- Extract another parameter in `someShape` and use Mouse.y to control that
+
 Signal.map is defined for up to 5 signals
 """
   , """
-## Side note: Standard Library Signal sources
+## Side note: Signals in the Standard Library
 - [Keyboard](http://package.elm-lang.org/packages/elm-lang/core/3.0.0/Mouse)
 - [Mouse](http://package.elm-lang.org/packages/elm-lang/core/3.0.0/Mouse)
 - [Time](http://package.elm-lang.org/packages/elm-lang/core/3.0.0/Time)
@@ -113,25 +117,51 @@ Signal.map is defined for up to 5 signals
 """
   , """
 ## Step 5
-Remember the past
+Use past Signal values with `foldp`
+
+![Elm](assets/signal-map-foldp.png)
+
+```
+foldp : (a -> b -> b) -> b -> Signal a -> Signal b
+```
+"""
+  , """
+## Step 6
+Count clicks
 ```elm
-cartesianX x width =
-    x - (width // 2)
+update action count =
+  count + 1
 
-update x acc =
-    (cartesianX x 500) + acc
+model = 
+  Signal.foldp update 0 Mouse.clicks
 
-historyX = Signal.foldp update 0 Mouse.x
-
-main = Signal.map view historyX
+main = Signal.map show model
 ```
 
 """
   , """
-## Step 6
-Merge
+## Step 7
+Merge two Signals
 ```elm
+type Action = PosX Int | Click
+
+update action (pos, count) =
+  case action of
+    PosX x -> (x, count)
+    Click -> (pos, count + 1)
+
+inputs = 
+  Signal.mergeMany
+    [ Signal.map PosX Mouse.x
+    , Signal.map (\\_ -> Click) Mouse.clicks
+    ]
+
+model = 
+  Signal.foldp update (0, 0) inputs
+
+main = Signal.map show model
 ```
+- Give step 6 and 7 a try
 
 """
   , """
@@ -149,12 +179,7 @@ main =
 - create intermediary functions to transform the incoming Signal Type and range to something that matches your parameter
 """
   , """
-## Reactive in Elm
-The Signal type represents values that can change over time
-![Elm](assets/reactive-elm-diagram-small.png)
-"""
-  , """
-## What we can know about a Signal
+## What we know about a Signal
 - a Signal wraps value that changes over time
 - a Signal value has a predefined type
 - a Signal value is always defined
@@ -164,19 +189,97 @@ The Signal type represents values that can change over time
 - to be usefull the Signal must be passed to `main` or to a `port`
 """
   , """
-## Doc links
-- [Syntax](http://elm-lang.org/docs/syntax)
-- [Style guide](http://elm-lang.org/docs/styleguide)
-- [Docs for core libraries](http://package.elm-lang.org/)
+## Reactive in Elm
+The Signal type represents values that can change over time
+![Elm](assets/reactive-elm-diagram-small.png)
 """
   , """
-# Signal manipulation
-[Signal](http://package.elm-lang.org/packages/elm-lang/core/2.1.0/Signal)
-- map, map2, map3 ...
-- merge, mergeMany
-- foldp
-- filter, dropRepeats, sampleOn
+## Examples, Dot clock
+```elm
+import Color exposing (rgb, black)
+import Graphics.Collage exposing (..)
+import Signal
+import Time exposing (inSeconds, every, millisecond)
 
-[Signal Extra](http://package.elm-lang.org/packages/Apanatshka/elm-signal-extra/5.6.0)
+main =
+    Signal.map (dot << inSeconds) (every <| 10 * millisecond)
+
+dot t =
+  let x = 75*cos(-2*pi * t / 60)
+      y = 75*sin(-2*pi * t / 60)
+  in collage 200 200
+      [ circle 2 |> filled (rgb 128 0 128) |> move (x, y) 
+      , square 200 |> outlined (solid black)
+      ]
+```
+- Try it out
+
+By [Joey Eremondi](http://codegolf.stackexchange.com/questions/62095/a-single-pixel-moving-in-a-circular-path/62189#62189)
+"""
+  , """
+## Examples, Running Lambda
+```elm
+import Graphics.Collage exposing (..)
+import Graphics.Element exposing (..)
+import Text
+import Color exposing (..)
+import Time
+import Signal
+
+lambdaForm scaleFactor color pos =
+    Text.fromString "𝝀"
+      |> Text.color color
+      |> text
+      |> scale scaleFactor
+      |> move pos
+                      
+colors =
+  [purple, blue, green, yellow, orange, red]
+  |> List.map (List.repeat 12)
+  |> List.concat
+
+animatedColors =
+  let step _ colorLists =
+    case colorLists of
+      (color::colors)::_ -> (colors ++ [color]) :: colorLists
+      [] :: _ -> []
+      [] -> []
+  in
+    List.foldr step [colors] colors
+      |> List.map (\\xs -> xs ++ [lightOrange])
+      |> List.reverse
+      |> List.indexedMap (\\i x -> if i % 2 == 0 then Just x else Nothing)
+      |> List.filterMap identity
+
+positions start diffX diffY =
+  let step _ xs =
+    case xs of
+      (x,y) :: _ -> (x + diffX, y - diffY) :: xs
+      [] -> []
+  in
+    List.foldr step [start] colors
+
+model = animatedColors
+
+update _ remainingFrames =
+  case remainingFrames of
+    [_] -> animatedColors
+    [] -> animatedColors
+    _::tl -> tl
+
+view remainingFrames =
+  let colors = remainingFrames |> List.head |> Maybe.withDefault []
+  in
+    (rect 400 400 |> filled lightGrey)
+    :: List.map2 (lambdaForm 30) colors (positions (-62,90) 1.5 0.75)
+      |> collage 400 400
+
+main : Signal Element
+main =
+  Time.fps 24 |> Signal.foldp update model |> Signal.map view
+```
+- Try it out
+
+By [James MacAuly](https://gist.github.com/jamesmacaulay/048ecc7b789524e84b37)
 """
   ]

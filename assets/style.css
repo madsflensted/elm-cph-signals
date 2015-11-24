@@ -187,3 +187,23 @@ blockquote p {
 .comparison tr:nth-child(even) {
   background: #fbfbfb;
 }
+
+.overlay {
+  background:rgba(0,0,0,.20);
+  text-align:center;
+  padding:120px 0 120px 0;
+  opacity:0;
+  -webkit-transition: opacity .25s ease;
+  -moz-transition: opacity .25s ease;
+}
+
+.navigate:hover .overlay {
+  opacity:1;
+}
+
+.arrow { 
+  font-family:Helvetica;
+  font-weight:900;
+  color:rgba(255,255,255,.85);
+  font-size:96px;
+}
