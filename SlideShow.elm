@@ -6,15 +6,20 @@ import Html.Events exposing (onClick)
 import Graphics.Element exposing (..)
 import List
 import Maybe exposing (withDefault)
-import StartApp.Simple as StartApp
+import StartApp
 import Slides
+import Keyboard
+import Effects
 
+main = app.html
 
-main =
-  StartApp.start { model = model, view = view, update = update }
+(->>) f g a b = f a b |> g  
+addNoneEffect model = (model, Effects.none)
 
+app =
+  StartApp.start { init = initialModel |> addNoneEffect, view = view, update = update ->> addNoneEffect, inputs = inputs }
 
-model = 
+initialModel = 
   { index = 0
   , slides = Slides.allSlides
   }
@@ -31,10 +36,23 @@ view address model =
       ]
 
 
-type Action = Increment | Decrement
+type Action = Increment | Decrement | NoOp
 
 
 update action model =
   case action of
     Increment -> { model | index = (model.index + 1) % List.length(model.slides) }
     Decrement -> { model | index = (model.index - 1) % List.length(model.slides) }
+    NoOp -> model
+
+
+interpretArrows arrows =
+  case (arrows.x, arrows.y) of
+    (-1,_) -> Decrement
+    (1, _) -> Increment
+    (_, 1) -> Decrement
+    (_,-1) -> Increment
+    _  -> NoOp
+
+inputs =
+  [ Signal.map interpretArrows Keyboard.arrows ]
