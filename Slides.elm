@@ -91,6 +91,7 @@ cartesian (x, y) (width, height) =
   (cartesianX x width, cartesianY y height)
 
 ```
+NOTE: above works because our example the collage's upper left corner at (0,0) on the web page, otherwise you would need to add the coordinates for the upper left corner of your collage placement on the page.
 """
   , """
 ## Step 4
